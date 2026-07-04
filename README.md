@@ -120,8 +120,11 @@ housing/
 ```bash
 git clone https://github.com/your-username/housing.git
 cd housing
+```
 
+```
 CREATE DATABASE housing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
 spring:
   datasource:
@@ -129,6 +132,7 @@ spring:
     username: root
     password: your_password
 
+```sql
 -- 用户表
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -162,6 +166,7 @@ CREATE TABLE houses (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (landlord_id) REFERENCES users(id) ON DELETE CASCADE
 );
+```
 
 # 编译打包
 mvn clean package
