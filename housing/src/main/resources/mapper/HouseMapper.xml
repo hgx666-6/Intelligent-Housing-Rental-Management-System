@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.house.housing.mapper.HouseMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="HouseResultMap" type="com.house.housing.entity.House">
+        <id column="id" property="id"/>
+        <result column="landlord_id" property="landlordId"/>
+        <result column="rent_price" property="rentPrice"/>
+        <result column="house_type" property="houseType"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <!-- 关联字段（非数据库字段） -->
+        <result column="landlord_name" property="landlordName"/>
+        <result column="landlord_phone" property="landlordPhone"/>
+    </resultMap>
+
+    <!-- 多条件分页查询房源列表 -->
+    <select id="selectHouseList" resultMap="HouseResultMap">
+        SELECT
+        h.*,
+        u.real_name AS landlord_name,
+        u.phone AS landlord_phone
+        FROM houses h
+        LEFT JOIN users u ON h.landlord_id = u.id
+        <where>
+            <!-- 默认只查已上架，除非房东查自己的或管理员查所有 -->
+            <if test="query.landlordId == null and query.status == null">
+                AND h.status = 1
+            </if>
+            <if test="query.status != null">
+                AND h.status = #{query.status}
+            </if>
+            <if test="query.landlordId != null">
+                AND h.landlord_id = #{query.landlordId}
+            </if>
+            <if test="query.city != null and query.city != ''">
+                AND h.city = #{query.city}
+            </if>
+            <if test="query.district != null and query.district != ''">
+                AND h.district = #{query.district}
+            </if>
+            <if test="query.houseType != null and query.houseType != ''">
+                AND h.house_type = #{query.houseType}
+            </if>
+            <if test="query.minPrice != null">
+                AND h.rent_price >= #{query.minPrice}
+            </if>
+            <if test="query.maxPrice != null">
+                AND h.rent_price &lt;= #{query.maxPrice}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (h.title LIKE CONCAT('%', #{query.keyword}, '%')
+                OR h.address LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField} ${query.sortOrder}
+            </when>
+            <otherwise>
+                h.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{query.limit} OFFSET #{query.limit * (query.page - 1)}
+    </select>
+
+    <!-- 统计符合条件的房源总数 -->
+    <select id="countHouseList" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM houses h
+        <where>
+            <!-- 默认只查已上架，除非房东查自己的或管理员查所有 -->
+            <if test="query.landlordId == null and query.status == null">
+                AND h.status = 1
+            </if>
+            <if test="query.status != null">
+                AND h.status = #{query.status}
+            </if>
+            <if test="query.landlordId != null">
+                AND h.landlord_id = #{query.landlordId}
+            </if>
+            <if test="query.city != null and query.city != ''">
+                AND h.city = #{query.city}
+            </if>
+            <if test="query.district != null and query.district != ''">
+                AND h.district = #{query.district}
+            </if>
+            <if test="query.houseType != null and query.houseType != ''">
+                AND h.house_type = #{query.houseType}
+            </if>
+            <if test="query.minPrice != null">
+                AND h.rent_price >= #{query.minPrice}
+            </if>
+            <if test="query.maxPrice != null">
+                AND h.rent_price &lt;= #{query.maxPrice}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (h.title LIKE CONCAT('%', #{query.keyword}, '%')
+                OR h.address LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,105 @@
+server:
+  port: 5000
+  tomcat:
+    max-connections: 200
+    max-threads: 200
+    min-spare-threads: 10
+    connection-timeout: 30000
+    uri-encoding: UTF-8
+
+spring:
+  application:
+    name: housing
+
+  # ========== MySQL 数据库配置 ==========
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/house_20260704?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 12345678
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+  # ========== RabbitMQ 消息队列配置 ==========
+  rabbitmq:
+    host: 8.148.68.72
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: auto
+        prefetch: 1
+        concurrency: 5
+        max-concurrency: 10
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+  # ========== Redis 配置（JWT存令牌用，建议加上）==========
+  data:
+    redis:
+      host: 8.148.68.72
+      port: 6379
+      password:  # 如果有密码就填
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+# ========== MyBatis-Plus 配置（注意：必须在根节点，不在spring下面）==========
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.house.housing.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# ========== JWT 配置 ==========
+jwt:
+  secret: your-256-bit-secret-key-housing.-20260704-12345678
+  expiration: 604800000
+  refresh-expiration: 1209600000
+
+# ========== OSS 对象存储配置 ==========
+oss:
+  endpoint: https://oss-cn-hangzhou.aliyuncs.com
+  access-key-id: your-access-key-id
+  access-key-secret: your-access-key-secret
+  bucket-name: your-bucket-name
+  custom-domain: https://your-domain.com
+  path-prefix: housing/20260704
+
+# ========== 自定义业务配置 ==========
+housing.:
+  upload:
+    max-file-size: 10MB
+    max-request-size: 50MB
+    allowed-extensions: jpg,jpeg,png,gif,mp4,pdf,doc,docx
+  captcha:
+    length: 4
+    expire: 600
+
+# ========== 日志配置 ==========
+logging:
+  level:
+    com.housing.: debug
+    org.springframework.web: info
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql.BasicBinder: trace
+
+# ========== 阿里云OSS配置（补充） ==========
+aliyun:
+  oss:
+    endpoint:
+    access-key-id:
+    access-key-secret:
+    bucket-name:
+    region:
