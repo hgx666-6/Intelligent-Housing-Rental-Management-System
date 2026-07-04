@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>租房管理系统 - 含收藏</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --primary-bg: #eff6ff;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --transition: all 0.25s ease;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font);
+            background: var(--gray-100);
+            color: var(--gray-800);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #app {
+            width: 100%;
+            max-width: 1280px;
+            min-height: 100vh;
+            background: var(--gray-50);
+            position: relative;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.05);
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .page {
+            display: none;
+            flex: 1;
+            animation: fadeIn 0.3s ease;
+            padding: 20px 24px 40px;
+            width: 100%;
+        }
+        .page.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0 20px;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .topbar-left .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+        .topbar-left .logo span { color: var(--gray-700); }
+        .topbar-left .role-badge {
+            font-size: 13px;
+            background: var(--primary-bg);
+            color: var(--primary);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--gray-300);
+            color: var(--gray-600);
+        }
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-bg);
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover { background: #059669; }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 5px 14px; font-size: 13px; }
+        .btn-xs { padding: 3px 10px; font-size: 12px; border-radius: 6px; }
+        .role-switcher {
+            display: flex;
+            gap: 6px;
+            background: var(--gray-200);
+            padding: 4px;
+            border-radius: 10px;
+        }
+        .role-switcher .btn {
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-size: 13px;
+            background: transparent;
+            color: var(--gray-600);
+        }
+        .role-switcher .btn.active {
+            background: #fff;
+            color: var(--gray-900);
+            box-shadow: var(--shadow);
+        }
+        .role-switcher .btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 8px;
+        }
+        .property-card {
+            background: #fff;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid var(--gray-200);
+            position: relative;
+        }
+        .property-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+        .property-card .img-wrap {
+            height: 180px;
+            background: var(--gray-200);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: var(--gray-400);
+        }
+        .property-card .img-wrap .tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 12px;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .property-card .body {
+            padding: 16px 18px 18px;
+        }
+        .property-card .body .title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .property-card .body .address {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+        .property-card .body .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--gray-600);
+            border-top: 1px solid var(--gray-100);
+            padding-top: 12px;
+            margin-top: 4px;
+        }
+        .property-card .body .meta .price {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .property-card .body .meta .price small {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--gray-500);
+        }
+        .favorite-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.85);
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            color: #e5e7eb;
+            line-height: 1;
+        }
+        .favorite-btn:hover { transform: scale(1.15); }
+        .favorite-btn.liked { color: #ef4444; }
+        .favorite-btn.liked:hover { color: #dc2626; }
+        .card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .card-header h2 { font-size: 20px; font-weight: 600; }
+        .card-header h3 { font-size: 17px; font-weight: 600; }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 18px;
+            margin: 12px 0 20px;
+        }
+        .dash-card {
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .dash-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-light);
+        }
+        .dash-card .icon { font-size: 36px; margin-bottom: 8px; }
+        .dash-card .label { font-size: 15px; font-weight: 500; color: var(--gray-700); }
+        .dash-card .count { font-size: 28px; font-weight: 700; color: var(--primary); margin-top: 4px; }
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table th {
+            text-align: left;
+            padding: 12px 14px;
+            background: var(--gray-50);
+            color: var(--gray-600);
+            font-weight: 600;
+            border-bottom: 2px solid var(--gray-200);
+        }
+        table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        table tr:hover td { background: var(--gray-50); }
+        .badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-yellow { background: #fef3c7; color: #92400e; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-gray { background: var(--gray-200); color: var(--gray-600); }
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-item {
+            background: #fff;
+            padding: 18px 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow);
+        }
+        .stat-item .num { font-size: 28px; font-weight: 700; color: var(--gray-900); }
+        .stat-item .label { font-size: 14px; color: var(--gray-500); }
+        .detail-hero {
+            background: var(--gray-200);
+            border-radius: var(--radius);
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            color: var(--gray-400);
+            margin-bottom: 20px;
+        }
+        .detail-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .detail-meta .item {
+            padding: 12px 16px;
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+        .detail-meta .item .lbl { font-size: 13px; color: var(--gray-500); }
+        .detail-meta .item .val { font-size: 16px; font-weight: 600; }
+        .review-item {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .review-item:last-child { border-bottom: none; }
+        .review-item .head {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+        .review-item .head .name { font-weight: 500; color: var(--gray-800); }
+        .review-item .stars { color: var(--secondary); }
+        .review-item .content { margin-top: 4px; font-size: 14px; color: var(--gray-700); }
+        .quick-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 8px;
+        }
+        .quick-nav .btn { font-size: 13px; }
+        .admin-layout {
+            display: flex;
+            gap: 24px;
+            margin-top: 8px;
+        }
+        .admin-sidebar {
+            flex: 0 0 220px;
+            background: #fff;
+            border-radius: var(--radius);
+            padding: 16px 0;
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        .admin-sidebar .item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+            font-weight: 500;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-sidebar .item:hover {
+            background: var(--gray-50);
+            color: var(--gray-900);
+        }
+        .admin-sidebar .item.active {
+            border-left-color: var(--primary);
+            background: var(--primary-bg);
+            color: var(--primary);
+        }
+        .admin-content { flex: 1; min-width: 0; }
+        .login-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            padding: 20px;
+        }
+        .login-box {
+            background: #fff;
+            padding: 48px 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-hover);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--gray-200);
+        }
+        .login-box h1 { font-size: 28px; margin-bottom: 4px; }
+        .login-box .sub { color: var(--gray-500); margin-bottom: 28px; }
+        .login-box .form-group { margin-bottom: 18px; }
+        .login-box .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--gray-700);
+        }
+        .login-box .form-group input,
+        .login-box .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: var(--transition);
+            outline: none;
+            background: #fff;
+        }
+        .login-box .form-group input:focus,
+        .login-box .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .login-box .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        @media (max-width: 768px) {
+            .page { padding: 12px 14px 30px; }
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .topbar-left { justify-content: space-between; }
+            .topbar-right { justify-content: space-between; }
+            .role-switcher { flex: 1; }
+            .role-switcher .btn {
+                flex: 1;
+                text-align: center;
+                justify-content: center;
+            }
+            .admin-layout { flex-direction: column; }
+            .admin-sidebar {
+                flex: 1;
+                display: flex;
+                flex-wrap: wrap;
+                padding: 8px 12px;
+                gap: 4px;
+            }
+            .admin-sidebar .item {
+                border-left: none;
+                padding: 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            .admin-sidebar .item.active {
+                border-left: none;
+                background: var(--primary);
+                color: #fff;
+            }
+            .detail-meta { grid-template-columns: 1fr; }
+            .property-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            .property-grid { grid-template-columns: 1fr; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr; }
+            .login-box { padding: 32px 20px; }
+        }
+        .mt-16 { margin-top: 16px; }
+        .text-muted { color: var(--gray-500); }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <!-- ========== 登录页 ========== -->
+    <div id="page-login" class="page active">
+        <div class="login-wrap">
+            <div class="login-box">
+                <h1>🏠 租房管理</h1>
+                <p class="sub">登录以继续使用系统</p>
+                <form id="loginForm" onsubmit="return handleLogin(event)">
+                    <div class="form-group">
+                        <label>角色</label>
+                        <select id="loginRole">
+                            <option value="tenant">租客</option>
+                            <option value="landlord">房东</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" id="loginUser" placeholder="请输入用户名" value="demo" />
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="loginPass" placeholder="请输入密码" value="123456" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">登 录</button>
+                </form>
+                <p style="margin-top:16px;font-size:13px;color:var(--gray-400);text-align:center;">演示账号：任意角色 / 任意密码</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 租客主页 ========== -->
+    <div id="page-tenant-home" class="page">
+        <div class="topbar">
+            <div class="topbar-left">
+                <span class="logo">🏠 租房<span>系统</span></span>
+                <span class="role-badge">👤 租客</span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-favorites')">❤️ 我的收藏</button>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-reviews')">⭐ 我的评价</button>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-contract')">📄 我的合同</button>
+                <button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <h2 style="font-size:22px;">🏡 房源浏览</h2>
+            <div style="display:flex;gap:8px;">
+                <input type="text" placeholder="搜索房源..." style="padding:8px 14px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;outline:none;width:200px;" />
+                <button class="btn btn-primary btn-sm">搜索</button>
+            </div>
+        </div>
+        <div class="property-grid" id="propertyGrid"></div>
+    </div>
+
+    <!-- ========== 我的收藏 ========== -->
+    <div id="page-tenant-favorites" class="page">
+        <div class="topbar">
+            <div class="topbar-left">
+                <span class="logo">🏠 租房<span>系统</span></span>
+                <span class="role-badge">❤️ 我的收藏</span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-home')">← 返回主页</button>
+                <button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <h2 style="font-size:22px;">❤️ 收藏的房源</h2>
+            <span id="favoriteCount" style="font-size:14px;color:var(--gray-500);">共 0 套</span>
+        </div>
+        <div class="property-grid" id="favoriteGrid"></div>
+    </div>
+
+    <!-- ========== 租客-房源详情 ========== -->
+    <div id="page-tenant-detail" class="page">
+        <div class="topbar">
+            <div class="topbar-left">
+                <span class="logo">🏠 租房<span>系统</span></span>
+                <span class="role-badge">📋 房源详情</span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-home')">← 返回主页</button>
+                <button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+        <div id="detailContent"></div>
+    </div>
+
+    <!-- ========== 租客-评价 ========== -->
+    <div id="page-tenant-reviews" class="page">
+        <div class="topbar">
+            <div class="topbar-left">
+                <span class="logo">🏠 租房<span>系统</span></span>
+                <span class="role-badge">⭐ 我的评价</span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-home')">← 返回主页</button>
+                <button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+        <div class="quick-nav">
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-contract')">📄 租赁合同</button>
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-home')">🏡 房源列表</button>
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-detail')">📋 房源详情</button>
+        </div>
+        <div class="card">
+            <div class="card-header"><h2>我的评价</h2><button class="btn btn-primary btn-sm">+ 写评价</button></div>
+            <div id="reviewsList"></div>
+        </div>
+    </div>
+
+    <!-- ========== 租客-合同 ========== -->
+    <div id="page-tenant-contract" class="page">
+        <div class="topbar">
+            <div class="topbar-left">
+                <span class="logo">🏠 租房<span>系统</span></span>
+                <span class="role-badge">📄 租赁合同</span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-home')">← 返回主页</button>
+                <button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+        <div class="quick-nav">
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-home')">🏡 房源列表</button>
+            <button class="btn btn-outline btn-sm" onclick="navigateTo('page-tenant-reviews')">⭐ 我的评价</button>
+        </div>
+        <div class="card">
+            <div class="card-header"><h2>我的租赁合同</h2></div>
+            <div id="contractList"></div>
+        </div>
+    </div>
+
+    <!-- ========== 房东页面（简略，保留功能） ========== -->
+    <div id="page-landlord-property" class="page">
+        <div class="topbar">
+            <div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">👔 房东 · 房源管理</span></div>
+            <div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div>
+        </div>
+        <div class="dashboard-grid">
+            <div class="dash-card" onclick="navigateTo('page-landlord-property')"><div class="icon">🏠</div><div class="label">房源管理</div><div class="count">12</div></div>
+            <div class="dash-card" onclick="navigateTo('page-landlord-booking')"><div class="icon">📅</div><div class="label">预约管理</div><div class="count">5</div></div>
+            <div class="dash-card" onclick="navigateTo('page-landlord-contract')"><div class="icon">📄</div><div class="label">合同管理</div><div class="count">8</div></div>
+            <div class="dash-card" onclick="navigateTo('page-landlord-finance')"><div class="icon">💰</div><div class="label">财务管理</div><div class="count">¥12.8k</div></div>
+            <div class="dash-card" onclick="navigateTo('page-landlord-detail')"><div class="icon">🔍</div><div class="label">房源详情查看</div><div class="count">→</div></div>
+        </div>
+        <div class="card"><div class="card-header"><h3>我的房源列表</h3><button class="btn btn-primary btn-sm">+ 发布房源</button></div>
+            <div class="table-wrap"><table><thead><tr><th>房源</th><th>地址</th><th>租金</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody><tr><td>阳光花园 3栋101</td><td>朝阳区幸福路88号</td><td>¥3800/月</td><td><span class="badge badge-green">已出租</span></td><td><button class="btn btn-outline btn-xs">编辑</button></td></tr>
+                <tr><td>翡翠湾 5栋203</td><td>西湖区文一路66号</td><td>¥4500/月</td><td><span class="badge badge-yellow">待租</span></td><td><button class="btn btn-outline btn-xs">编辑</button></td></tr>
+                <tr><td>白云小区 12-502</td><td>白云区机场路12号</td><td>¥2200/月</td><td><span class="badge badge-blue">已预约</span></td><td><button class="btn btn-outline btn-xs">编辑</button></td></tr></tbody></table></div></div>
+    </div>
+    <div id="page-landlord-booking" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">👔 房东 · 预约管理</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="dashboard-grid"><div class="dash-card" onclick="navigateTo('page-landlord-property')"><div class="icon">🏠</div><div class="label">房源管理</div><div class="count">12</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-booking')"><div class="icon">📅</div><div class="label">预约管理</div><div class="count">5</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-contract')"><div class="icon">📄</div><div class="label">合同管理</div><div class="count">8</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-finance')"><div class="icon">💰</div><div class="label">财务管理</div><div class="count">¥12.8k</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-detail')"><div class="icon">🔍</div><div class="label">房源详情查看</div><div class="count">→</div></div></div>
+        <div class="card"><div class="card-header"><h3>预约列表</h3></div><div class="table-wrap"><table><thead><tr><th>租客</th><th>房源</th><th>预约时间</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody><tr><td>张三</td><td>阳光花园 3栋101</td><td>2026-07-10 14:00</td><td><span class="badge badge-yellow">待确认</span></td><td><button class="btn btn-success btn-xs">确认</button> <button class="btn btn-danger btn-xs">拒绝</button></td></tr>
+        <tr><td>李四</td><td>翡翠湾 5栋203</td><td>2026-07-12 10:30</td><td><span class="badge badge-green">已确认</span></td><td><button class="btn btn-outline btn-xs">详情</button></td></tr></tbody></table></div></div>
+    </div>
+    <div id="page-landlord-contract" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">👔 房东 · 合同管理</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="dashboard-grid"><div class="dash-card" onclick="navigateTo('page-landlord-property')"><div class="icon">🏠</div><div class="label">房源管理</div><div class="count">12</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-booking')"><div class="icon">📅</div><div class="label">预约管理</div><div class="count">5</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-contract')"><div class="icon">📄</div><div class="label">合同管理</div><div class="count">8</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-finance')"><div class="icon">💰</div><div class="label">财务管理</div><div class="count">¥12.8k</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-detail')"><div class="icon">🔍</div><div class="label">房源详情查看</div><div class="count">→</div></div></div>
+        <div class="card"><div class="card-header"><h3>合同列表</h3><button class="btn btn-primary btn-sm">+ 新建合同</button></div>
+        <div class="table-wrap"><table><thead><tr><th>合同编号</th><th>房源</th><th>租客</th><th>租期</th><th>状态</th></tr></thead>
+        <tbody><tr><td>HT-2026-001</td><td>阳光花园 3栋101</td><td>张三</td><td>2026.01-2026.12</td><td><span class="badge badge-green">生效中</span></td></tr>
+        <tr><td>HT-2026-002</td><td>翡翠湾 5栋203</td><td>李四</td><td>2026.03-2027.03</td><td><span class="badge badge-green">生效中</span></td></tr>
+        <tr><td>HT-2026-003</td><td>白云小区 12-502</td><td>王五</td><td>2026.06-2026.12</td><td><span class="badge badge-yellow">待签署</span></td></tr></tbody></table></div></div>
+    </div>
+    <div id="page-landlord-finance" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">👔 房东 · 财务管理</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="dashboard-grid"><div class="dash-card" onclick="navigateTo('page-landlord-property')"><div class="icon">🏠</div><div class="label">房源管理</div><div class="count">12</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-booking')"><div class="icon">📅</div><div class="label">预约管理</div><div class="count">5</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-contract')"><div class="icon">📄</div><div class="label">合同管理</div><div class="count">8</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-finance')"><div class="icon">💰</div><div class="label">财务管理</div><div class="count">¥12.8k</div></div>
+        <div class="dash-card" onclick="navigateTo('page-landlord-detail')"><div class="icon">🔍</div><div class="label">房源详情查看</div><div class="count">→</div></div></div>
+        <div class="stat-row"><div class="stat-item"><div class="num">¥12,800</div><div class="label">本月收入</div></div><div class="stat-item"><div class="num">¥8,400</div><div class="label">已收租金</div></div><div class="stat-item"><div class="num">¥4,400</div><div class="label">待收租金</div></div><div class="stat-item"><div class="num">3</div><div class="label">租客数</div></div></div>
+        <div class="card"><div class="card-header"><h3>收支明细</h3></div><div class="table-wrap"><table><thead><tr><th>日期</th><th>摘要</th><th>类型</th><th>金额</th></tr></thead>
+        <tbody><tr><td>2026-07-01</td><td>阳光花园 3栋101 房租</td><td><span class="badge badge-green">收入</span></td><td>+¥3,800</td></tr>
+        <tr><td>2026-07-01</td><td>翡翠湾 5栋203 房租</td><td><span class="badge badge-green">收入</span></td><td>+¥4,500</td></tr>
+        <tr><td>2026-06-28</td><td>物业费 - 白云小区</td><td><span class="badge badge-red">支出</span></td><td>-¥320</td></tr></tbody></table></div></div>
+    </div>
+    <div id="page-landlord-detail" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">🔍 房源详情查看</span></div><div class="topbar-right"><button class="btn btn-outline btn-sm" onclick="goBackLandlord()">← 返回上一级</button><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="card"><div class="detail-hero">🏢</div><h2 style="margin-bottom:4px;">阳光花园 3栋101</h2><p class="text-muted">📍 朝阳区幸福路88号 · 3室2厅 120㎡</p>
+        <div class="detail-meta"><div class="item"><div class="lbl">租金</div><div class="val">¥3,800 / 月</div></div><div class="item"><div class="lbl">押金</div><div class="val">¥7,600</div></div><div class="item"><div class="lbl">状态</div><div class="val"><span class="badge badge-green">已出租</span></div></div><div class="item"><div class="lbl">租客</div><div class="val">张三</div></div></div>
+        <p style="color:var(--gray-600);">房源描述：阳光充足，南北通透，精装修，拎包入住，靠近地铁站，生活便利。</p>
+        <div class="quick-nav mt-16"><button class="btn btn-outline btn-sm" onclick="navigateTo('page-landlord-property')">🏠 房源管理</button><button class="btn btn-outline btn-sm" onclick="navigateTo('page-landlord-booking')">📅 预约管理</button><button class="btn btn-outline btn-sm" onclick="navigateTo('page-landlord-contract')">📄 合同管理</button><button class="btn btn-outline btn-sm" onclick="navigateTo('page-landlord-finance')">💰 财务管理</button></div></div>
+    </div>
+
+    <!-- ========== 管理员页面（简略） ========== -->
+    <div id="page-admin-users" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">🔧 管理员 · 用户管理</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="admin-layout"><div class="admin-sidebar"><div class="item active" onclick="navigateTo('page-admin-users')">👥 用户管理</div><div class="item" onclick="navigateTo('page-admin-audit')">✅ 房源审核</div><div class="item" onclick="navigateTo('page-admin-analytics')">📊 数据分析</div><div class="item" onclick="navigateTo('page-admin-settings')">⚙️ 系统设置</div></div>
+        <div class="admin-content"><div class="card"><div class="card-header"><h3>用户列表</h3><button class="btn btn-primary btn-sm">+ 添加用户</button></div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>手机</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody><tr><td>1</td><td>zhangsan</td><td>租客</td><td>138****1234</td><td><span class="badge badge-green">正常</span></td><td><button class="btn btn-outline btn-xs">编辑</button> <button class="btn btn-danger btn-xs">禁用</button></td></tr>
+        <tr><td>2</td><td>lisi</td><td>租客</td><td>139****5678</td><td><span class="badge badge-green">正常</span></td><td><button class="btn btn-outline btn-xs">编辑</button> <button class="btn btn-danger btn-xs">禁用</button></td></tr>
+        <tr><td>3</td><td>wangwu</td><td>房东</td><td>136****9012</td><td><span class="badge badge-yellow">待认证</span></td><td><button class="btn btn-outline btn-xs">编辑</button> <button class="btn btn-success btn-xs">认证</button></td></tr>
+        <tr><td>4</td><td>admin</td><td>管理员</td><td>188****0000</td><td><span class="badge badge-green">正常</span></td><td><button class="btn btn-outline btn-xs">编辑</button></td></tr></tbody></table></div></div></div></div>
+    </div>
+    <div id="page-admin-audit" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">🔧 管理员 · 房源审核</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="admin-layout"><div class="admin-sidebar"><div class="item" onclick="navigateTo('page-admin-users')">👥 用户管理</div><div class="item active" onclick="navigateTo('page-admin-audit')">✅ 房源审核</div><div class="item" onclick="navigateTo('page-admin-analytics')">📊 数据分析</div><div class="item" onclick="navigateTo('page-admin-settings')">⚙️ 系统设置</div></div>
+        <div class="admin-content"><div class="card"><div class="card-header"><h3>待审核房源</h3><span class="badge badge-yellow">3 条待审</span></div>
+        <div class="table-wrap"><table><thead><tr><th>房源</th><th>房东</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody><tr><td>翠湖苑 8-301</td><td>王五</td><td>2026-07-03</td><td><span class="badge badge-yellow">待审核</span></td><td><button class="btn btn-success btn-xs">通过</button> <button class="btn btn-danger btn-xs">驳回</button></td></tr>
+        <tr><td>金域蓝湾 2-1502</td><td>赵六</td><td>2026-07-02</td><td><span class="badge badge-yellow">待审核</span></td><td><button class="btn btn-success btn-xs">通过</button> <button class="btn btn-danger btn-xs">驳回</button></td></tr>
+        <tr><td>龙湖花园 7-603</td><td>孙七</td><td>2026-07-01</td><td><span class="badge badge-blue">复审中</span></td><td><button class="btn btn-outline btn-xs">查看</button></td></tr></tbody></table></div></div></div></div>
+    </div>
+    <div id="page-admin-analytics" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">🔧 管理员 · 数据分析</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="admin-layout"><div class="admin-sidebar"><div class="item" onclick="navigateTo('page-admin-users')">👥 用户管理</div><div class="item" onclick="navigateTo('page-admin-audit')">✅ 房源审核</div><div class="item active" onclick="navigateTo('page-admin-analytics')">📊 数据分析</div><div class="item" onclick="navigateTo('page-admin-settings')">⚙️ 系统设置</div></div>
+        <div class="admin-content"><div class="stat-row"><div class="stat-item"><div class="num">156</div><div class="label">总用户</div></div><div class="stat-item"><div class="num">89</div><div class="label">总房源</div></div><div class="stat-item"><div class="num">47</div><div class="label">已出租</div></div><div class="stat-item"><div class="num">¥28.4k</div><div class="label">月交易额</div></div></div>
+        <div class="card"><div class="card-header"><h3>平台数据概览</h3></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><div style="background:var(--gray-50);padding:16px;border-radius:8px;text-align:center;"><div style="font-size:32px;">📈</div><div style="font-weight:600;">房源增长 +12%</div><div style="font-size:13px;color:var(--gray-500);">较上月</div></div><div style="background:var(--gray-50);padding:16px;border-radius:8px;text-align:center;"><div style="font-size:32px;">👥</div><div style="font-weight:600;">活跃用户 +8%</div><div style="font-size:13px;color:var(--gray-500);">较上月</div></div><div style="background:var(--gray-50);padding:16px;border-radius:8px;text-align:center;"><div style="font-size:32px;">🏷️</div><div style="font-weight:600;">出租率 52.8%</div><div style="font-size:13px;color:var(--gray-500);">较上月 +3.2%</div></div><div style="background:var(--gray-50);padding:16px;border-radius:8px;text-align:center;"><div style="font-size:32px;">⭐</div><div style="font-weight:600;">平均评分 4.6</div><div style="font-size:13px;color:var(--gray-500);">共 328 条评价</div></div></div></div></div></div>
+    </div>
+    <div id="page-admin-settings" class="page"><div class="topbar"><div class="topbar-left"><span class="logo">🏠 租房<span>系统</span></span><span class="role-badge">🔧 管理员 · 系统设置</span></div><div class="topbar-right"><button class="btn btn-danger btn-sm" onclick="logout()">退出登录</button></div></div>
+        <div class="admin-layout"><div class="admin-sidebar"><div class="item" onclick="navigateTo('page-admin-users')">👥 用户管理</div><div class="item" onclick="navigateTo('page-admin-audit')">✅ 房源审核</div><div class="item" onclick="navigateTo('page-admin-analytics')">📊 数据分析</div><div class="item active" onclick="navigateTo('page-admin-settings')">⚙️ 系统设置</div></div>
+        <div class="admin-content"><div class="card"><div class="card-header"><h3>系统设置</h3></div><div style="display:grid;gap:16px;"><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gray-100);"><div><div style="font-weight:500;">网站名称</div><div style="font-size:13px;color:var(--gray-500);">租房管理系统</div></div><button class="btn btn-outline btn-xs">编辑</button></div><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gray-100);"><div><div style="font-weight:500;">允许新用户注册</div><div style="font-size:13px;color:var(--gray-500);">当前: 开启</div></div><button class="btn btn-outline btn-xs">切换</button></div><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gray-100);"><div><div style="font-weight:500;">房源审核模式</div><div style="font-size:13px;color:var(--gray-500);">手动审核</div></div><button class="btn btn-outline btn-xs">修改</button></div><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gray-100);"><div><div style="font-weight:500;">短信通知</div><div style="font-size:13px;color:var(--gray-500);">已开启</div></div><button class="btn btn-outline btn-xs">配置</button></div><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;"><div><div style="font-weight:500;">系统版本</div><div style="font-size:13px;color:var(--gray-500);">v2.4.1</div></div><span class="badge badge-blue">最新</span></div></div></div></div></div>
+    </div>
+
+</div><!-- end #app -->
+
+<script>
+    // ================================================================
+    // 数据
+    // ================================================================
+    const properties = [
+        { id: 1, title: '阳光花园 3栋101', address: '朝阳区幸福路88号', price: 3800, area: '120㎡', rooms: '3室2厅', status: '已出租', statusBadge: 'badge-green', desc: '阳光充足，南北通透，精装修，拎包入住，靠近地铁站，生活便利。', landlord: '张先生', img: '🏢' },
+        { id: 2, title: '翡翠湾 5栋203', address: '西湖区文一路66号', price: 4500, area: '95㎡', rooms: '2室2厅', status: '待租', statusBadge: 'badge-yellow', desc: '现代风格装修，全新家具家电，小区环境优美，物业管理完善。', landlord: '李女士', img: '🏡' },
+        { id: 3, title: '白云小区 12-502', address: '白云区机场路12号', price: 2200, area: '78㎡', rooms: '2室1厅', status: '已预约', statusBadge: 'badge-blue', desc: '安静舒适，采光好，交通便利，周边配套齐全。', landlord: '王先生', img: '🏠' },
+        { id: 4, title: '翠湖苑 8-301', address: '滨江区江南大道88号', price: 5200, area: '135㎡', rooms: '4室2厅', status: '待租', statusBadge: 'badge-yellow', desc: '豪华装修，一线湖景，高端社区，车位充足。', landlord: '赵女士', img: '🏢' },
+        { id: 5, title: '金域蓝湾 2-1502', address: '江汉区沿江大道99号', price: 6100, area: '142㎡', rooms: '3室2厅', status: '已出租', statusBadge: 'badge-green', desc: '江景房，视野开阔，精装修，中央空调，地暖。', landlord: '刘先生', img: '🌆' },
+        { id: 6, title: '龙湖花园 7-603', address: '龙湖区龙湖路1号', price: 2800, area: '88㎡', rooms: '2室2厅', status: '待租', statusBadge: 'badge-yellow', desc: '小区绿化好，安静舒适，适合家庭居住。', landlord: '陈女士', img: '🏡' }
+    ];
+    const reviews = [
+        { user: '张三', rating: 5, content: '房子非常好，房东也很nice，推荐！', date: '2026-06-28' },
+        { user: '李四', rating: 4, content: '位置不错，交通方便，就是隔音稍差。', date: '2026-06-20' },
+        { user: '王五', rating: 5, content: '性价比超高，已经续租了。', date: '2026-06-15' },
+        { user: '赵六', rating: 3, content: '一般般吧，设施有点旧了。', date: '2026-06-10' }
+    ];
+    const contracts = [
+        { id: 'HT-2026-001', property: '阳光花园 3栋101', tenant: '张三', start: '2026-01-01', end: '2026-12-31', status: '生效中', badge: 'badge-green' },
+        { id: 'HT-2026-002', property: '翡翠湾 5栋203', tenant: '李四', start: '2026-03-01', end: '2027-03-01', status: '生效中', badge: 'badge-green' },
+        { id: 'HT-2026-003', property: '白云小区 12-502', tenant: '王五', start: '2026-06-01', end: '2026-12-31', status: '待签署', badge: 'badge-yellow' },
+        { id: 'HT-2026-004', property: '金域蓝湾 2-1502', tenant: '赵六', start: '2026-05-01', end: '2027-05-01', status: '生效中', badge: 'badge-green' }
+    ];
+
+    // ================================================================
+    // 收藏功能 (localStorage)
+    // ================================================================
+    function getFavorites() {
+        try { return JSON.parse(localStorage.getItem('favorites')) || []; } catch { return []; }
+    }
+    function setFavorites(list) { localStorage.setItem('favorites', JSON.stringify(list)); }
+    function toggleFavorite(propertyId) {
+        let favs = getFavorites();
+        const idx = favs.indexOf(propertyId);
+        if (idx > -1) favs.splice(idx, 1);
+        else favs.push(propertyId);
+        setFavorites(favs);
+        renderProperties();
+        renderFavorites();
+        updateFavoriteCount();
+        return favs;
+    }
+    function isFavorite(propertyId) { return getFavorites().includes(propertyId); }
+    function updateFavoriteCount() {
+        const el = document.getElementById('favoriteCount');
+        if (el) el.textContent = `共 ${getFavorites().length} 套`;
+    }
+
+    // ================================================================
+    // 导航系统
+    // ================================================================
+    const pageHistory = [];
+    function navigateTo(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const target = document.getElementById(pageId);
+        if (target) {
+            target.classList.add('active');
+            pageHistory.push(pageId);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (pageId === 'page-tenant-home') { renderProperties(); updateFavoriteCount(); }
+            if (pageId === 'page-tenant-favorites') { renderFavorites(); updateFavoriteCount(); }
+            if (pageId === 'page-tenant-reviews') renderReviews();
+            if (pageId === 'page-tenant-contract') renderContracts();
+            if (pageId === 'page-tenant-detail') {
+                const id = sessionStorage.getItem('detailPropertyId');
+                if (id) renderDetail(parseInt(id));
+            }
+            document.querySelectorAll('.admin-sidebar .item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll(`.admin-sidebar .item[data-page="${pageId}"]`).forEach(el => el.classList.add('active'));
+        }
+    }
+    function goBackLandlord() {
+        if (pageHistory.length > 1) navigateTo(pageHistory[pageHistory.length - 2]);
+        else navigateTo('page-landlord-property');
+    }
+    function handleLogin(e) {
+        e.preventDefault();
+        const role = document.getElementById('loginRole').value;
+        let target = 'page-tenant-home';
+        if (role === 'landlord') target = 'page-landlord-property';
+        else if (role === 'admin') target = 'page-admin-users';
+        pageHistory.length = 0;
+        navigateTo(target);
+        document.querySelectorAll('.role-switcher .btn').forEach(b => b.classList.remove('active'));
+        const map = { tenant: 'switcher-tenant', landlord: 'switcher-landlord', admin: 'switcher-admin' };
+        const btn = document.getElementById(map[role]);
+        if (btn) btn.classList.add('active');
+        return false;
+    }
+    function logout() {
+        if (confirm('确认退出登录？')) {
+            pageHistory.length = 0;
+            navigateTo('page-login');
+            document.querySelectorAll('.role-switcher .btn').forEach(b => b.classList.remove('active'));
+        }
+    }
+    function switchRole(role) {
+        document.getElementById('loginRole').value = role;
+        document.getElementById('loginUser').value = 'demo';
+        let target = 'page-tenant-home';
+        if (role === 'landlord') target = 'page-landlord-property';
+        else if (role === 'admin') target = 'page-admin-users';
+        pageHistory.length = 0;
+        navigateTo(target);
+        document.querySelectorAll('.role-switcher .btn').forEach(b => b.classList.remove('active'));
+        const map = { tenant: 'switcher-tenant', landlord: 'switcher-landlord', admin: 'switcher-admin' };
+        const btn = document.getElementById(map[role]);
+        if (btn) btn.classList.add('active');
+    }
+
+    // ================================================================
+    // 渲染函数
+    // ================================================================
+    function renderProperties() {
+        const grid = document.getElementById('propertyGrid');
+        grid.innerHTML = properties.map(p => {
+            const liked = isFavorite(p.id) ? 'liked' : '';
+            const heart = isFavorite(p.id) ? '❤️' : '🤍';
+            return `
+            <div class="property-card">
+                <div class="img-wrap" onclick="viewProperty(${p.id})">
+                    ${p.img}
+                    <span class="tag">${p.status}</span>
+                    <button class="favorite-btn ${liked}" onclick="event.stopPropagation(); toggleFavorite(${p.id});" title="收藏">${heart}</button>
+                </div>
+                <div class="body" onclick="viewProperty(${p.id})">
+                    <div class="title">${p.title}</div>
+                    <div class="address">📍 ${p.address}</div>
+                    <div style="font-size:13px;color:var(--gray-500);margin-bottom:6px;">${p.rooms} · ${p.area}</div>
+                    <div class="meta">
+                        <span class="price">¥${p.price} <small>/月</small></span>
+                        <span class="badge ${p.statusBadge}">${p.status}</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderFavorites() {
+        const grid = document.getElementById('favoriteGrid');
+        const favIds = getFavorites();
+        const favProperties = properties.filter(p => favIds.includes(p.id));
+        if (favProperties.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--gray-400);font-size:18px;">💔 暂未收藏任何房源</div>`;
+            return;
+        }
+        grid.innerHTML = favProperties.map(p => {
+            return `
+            <div class="property-card">
+                <div class="img-wrap" onclick="viewProperty(${p.id})">
+                    ${p.img}
+                    <span class="tag">${p.status}</span>
+                    <button class="favorite-btn liked" onclick="event.stopPropagation(); toggleFavorite(${p.id});" title="取消收藏">❤️</button>
+                </div>
+                <div class="body" onclick="viewProperty(${p.id})">
+                    <div class="title">${p.title}</div>
+                    <div class="address">📍 ${p.address}</div>
+                    <div style="font-size:13px;color:var(--gray-500);margin-bottom:6px;">${p.rooms} · ${p.area}</div>
+                    <div class="meta">
+                        <span class="price">¥${p.price} <small>/月</small></span>
+                        <span class="badge ${p.statusBadge}">${p.status}</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderDetail(id) {
+        const p = properties.find(x => x.id === id);
+        if (!p) { document.getElementById('detailContent').innerHTML = '<div class="card"><p>房源未找到</p></div>'; return; }
+        document.getElementById('detailContent').innerHTML = `
+            <div class="card">
+                <div class="detail-hero">${p.img}</div>
+                <h2 style="margin-bottom:4px;">${p.title}</h2>
+                <p class="text-muted">📍 ${p.address} · ${p.rooms} ${p.area}</p>
+                <div class="detail-meta">
+                    <div class="item"><div class="lbl">租金</div><div class="val">¥${p.price} / 月</div></div>
+                    <div class="item"><div class="lbl">状态</div><div class="val"><span class="badge ${p.statusBadge}">${p.status}</span></div></div>
+                    <div class="item"><div class="lbl">房东</div><div class="val">${p.landlord}</div></div>
+                    <div class="item"><div class="lbl">面积</div><div class="val">${p.area}</div></div>
+                </div>
+                <p style="color:var(--gray-600);margin:12px 0;">${p.desc}</p>
+                <div class="quick-nav">
+                    <button class="btn btn-primary" onclick="alert('✅ 预约已发起！')">📅 在线预约</button>
+                    <button class="btn btn-outline" onclick="navigateTo('page-tenant-reviews')">⭐ 查看全部评价</button>
+                    <button class="btn btn-outline" onclick="navigateTo('page-tenant-home')">← 返回主页</button>
+                </div>
+            </div>`;
+    }
+
+    function viewProperty(id) {
+        sessionStorage.setItem('detailPropertyId', id);
+        navigateTo('page-tenant-detail');
+    }
+
+    function renderReviews() {
+        const container = document.getElementById('reviewsList');
+        container.innerHTML = reviews.map(r => `
+            <div class="review-item">
+                <div class="head">
+                    <span class="name">${r.user}</span>
+                    <span class="stars">${'⭐'.repeat(r.rating)}</span>
+                    <span style="color:var(--gray-400);font-size:13px;">${r.date}</span>
+                </div>
+                <div class="content">${r.content}</div>
+            </div>
+        `).join('');
+    }
+
+    function renderContracts() {
+        const container = document.getElementById('contractList');
+        container.innerHTML = contracts.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gray-100);flex-wrap:wrap;gap:8px;">
+                <div>
+                    <div style="font-weight:600;">${c.id}</div>
+                    <div style="font-size:14px;color:var(--gray-600);">${c.property} · ${c.tenant}</div>
+                    <div style="font-size:13px;color:var(--gray-400);">${c.start} ~ ${c.end}</div>
+                </div>
+                <span class="badge ${c.badge}">${c.status}</span>
+            </div>
+        `).join('');
+    }
+
+    // 管理员侧边栏 data-page 属性
+    document.querySelectorAll('.admin-sidebar .item').forEach(el => {
+        const onclick = el.getAttribute('onclick');
+        if (onclick) {
+            const match = onclick.match(/navigateTo\('([^']+)'\)/);
+            if (match) el.setAttribute('data-page', match[1]);
+        }
+    });
+
+    // ================================================================
+    // 初始化
+    // ================================================================
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-login').classList.add('active');
+    renderProperties();
+    renderReviews();
+    renderContracts();
+    updateFavoriteCount();
+    console.log('🏠 租房管理系统已启动，❤️ 收藏功能可用，数据保存在 localStorage。');
+</script>
+</body>
+</html>
