@@ -1,0 +1,195 @@
+CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '用户主键ID',
+  `username` varchar(50) NOT NULL COMMENT '登录用户名，唯一',
+  `password` varchar(255) NOT NULL COMMENT '加密密码',
+  `phone` varchar(20) NOT NULL COMMENT '手机号',
+  `role` tinyint NOT NULL DEFAULT 1 COMMENT '角色：1租客 2房东',
+  `status` tinyint DEFAULT 1 COMMENT '账号状态：0禁用 1正常',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `avatar_url` varchar(100) DEFAULT NULL COMMENT '头像地址',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_username` (`username`),
+  KEY `idx_role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户表';
+
+
+CREATE TABLE `houses` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '房源ID',
+  `landlord_id` int NOT NULL COMMENT '房东用户ID，关联users.id',
+  `description` text DEFAULT NULL COMMENT '房源描述',
+  `address` varchar(255) NOT NULL COMMENT '详细地址',
+  `rent_price` decimal(10,2) NOT NULL COMMENT '月租金',
+  `house_type` varchar(30) NOT NULL COMMENT '户型，如一室一厅',
+  `area` decimal(8,2) DEFAULT NULL COMMENT '房屋面积㎡',
+  `facilities` json DEFAULT NULL COMMENT '配套设施JSON数组',
+  `images` json DEFAULT NULL COMMENT '房源图片地址JSON数组',
+  `status` tinyint DEFAULT 0 COMMENT '房源状态：0待出租 1已租 2下架',
+  `view_count` int DEFAULT 0 COMMENT '浏览次数',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `user_id` int NOT NULL COMMENT '发布人ID（同房东ID冗余）',
+  PRIMARY KEY (`id`),
+  KEY `idx_landlord` (`landlord_id`),
+  KEY `idx_rent_price` (`rent_price`),
+  KEY `idx_status` (`status`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='房源信息表';
+
+
+
+CREATE TABLE `house_collect` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '收藏记录ID',
+  `user_id` int NOT NULL COMMENT '收藏用户ID，关联users.id',
+  `house_id` int NOT NULL COMMENT '收藏房源ID，关联houses.id',
+  `collect_status` tinyint NOT NULL DEFAULT 1 COMMENT '收藏状态：1收藏 0取消',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_house` (`house_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户房源收藏表';
+
+
+CREATE TABLE `appointments` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '预约ID',
+  `house_id` int NOT NULL COMMENT '房源ID，关联houses.id',
+  `tenant_id` int NOT NULL COMMENT '租客ID，关联users.id',
+  `landlord_id` int NOT NULL COMMENT '房东ID，关联users.id',
+  `appointment_time` datetime NOT NULL COMMENT '预约看房时间',
+  `status` tinyint DEFAULT 0 COMMENT '预约状态：0待确认 1已同意 2已拒绝 3已完成',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '预约创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_house` (`house_id`),
+  KEY `idx_tenant` (`tenant_id`),
+  KEY `idx_landlord` (`landlord_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='看房预约记录表';
+
+
+
+CREATE TABLE `contracts` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '合同主键ID',
+  `house_id` int NOT NULL COMMENT '房源ID，关联houses.id',
+  `tenant_id` int NOT NULL COMMENT '租客ID，关联users.id',
+  `landlord_id` int NOT NULL COMMENT '房东ID，关联users.id',
+  `contract_no` varchar(50) NOT NULL COMMENT '合同编号，唯一',
+  `start_date` date NOT NULL COMMENT '租赁起始日期',
+  `end_date` date NOT NULL COMMENT '租赁结束日期',
+  `monthly_rent` decimal(10,2) NOT NULL COMMENT '每月租金',
+  `deposit_amount` decimal(10,2) NOT NULL COMMENT '押金金额',
+  `content` text DEFAULT NULL COMMENT '合同详细条款',
+  `tenant_signed` tinyint DEFAULT 0 COMMENT '租客是否签约：0未签 1已签',
+  `landlord_signed` tinyint DEFAULT 0 COMMENT '房东是否签约：0未签 1已签',
+  `status` tinyint DEFAULT 0 COMMENT '合同状态：0待签约 1生效中 2已到期 3已解约',
+  `signed_at` datetime DEFAULT NULL COMMENT '签约完成时间',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '合同创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_contract_no` (`contract_no`),
+  KEY `idx_house` (`house_id`),
+  KEY `idx_tenant` (`tenant_id`),
+  KEY `idx_landlord` (`landlord_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租房合同表';
+
+
+
+CREATE TABLE `payments` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '缴费记录ID',
+  `contract_id` int NOT NULL COMMENT '关联合同ID，关联contracts.id',
+  `amount` decimal(10,2) NOT NULL COMMENT '本次缴费金额',
+  `pay_period_start` date NOT NULL COMMENT '缴费周期起始日',
+  `pay_period_end` date NOT NULL COMMENT '缴费周期结束日',
+  `pay_status` tinyint DEFAULT 0 COMMENT '缴费状态：0待缴 1已缴 2逾期',
+  `paid_at` datetime DEFAULT NULL COMMENT '实际缴费时间',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '账单生成时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_contract` (`contract_id`),
+  KEY `idx_pay_status` (`pay_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租金缴费账单表';
+
+
+
+CREATE TABLE `reviews` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '评价ID',
+  `rating` tinyint NOT NULL COMMENT '评分 1~5星',
+  `comment` text DEFAULT NULL COMMENT '评价文字内容',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '评价创建时间',
+  `appointment_id` int NOT NULL COMMENT '关联看房预约ID，关联appointments.id',
+  PRIMARY KEY (`id`),
+  KEY `idx_appointment` (`appointment_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='房源看房评价表';
+
+
+
+INSERT INTO users (username, password, phone, role, status, avatar_url)
+VALUES
+('user_tenant1', '123456', '13100001111', 0, 1, 'avatar/t1.jpg'),
+('user_tenant2', '123456', '13100001112', 0, 1, 'avatar/t2.jpg'),
+('user_tenant3', '123456', '13100001113', 0, 1, 'avatar/t3.jpg'),
+('user_landlord1', '123456', '13200002221', 1, 1, 'avatar/l1.jpg'),
+('user_landlord2', '123456', '13200002222', 1, 1, 'avatar/l2.jpg'),
+('user_admin', '123456', '13300003333', 2, 1, 'avatar/admin.jpg');
+
+
+INSERT INTO houses (landlord_id, description, address, rent_price, house_type, area, facilities, images, status, view_count, user_id)
+VALUES
+(4, '光谷精装单间，近地铁，拎包入住', '洪山区光谷一路幸福小区1栋', 1600.00, '单间', 32.00, '["空调","热水器","WiFi"]', '["h1_1.jpg","h1_2.jpg"]', 1, 89, 4),
+(4, '两室一厅居家房，家电齐全', '洪山区关山大道锦绣家园3栋', 2200.00, '两室一厅', 65.50, '["空调","冰箱","洗衣机","燃气"]', '["h2_1.jpg","h2_2.jpg"]', 1, 156, 4),
+(4, 'loft复式公寓，采光绝佳', '洪山区南湖创意公寓5层', 2600.00, '复式', 42.80, '["空调","电视","热水器"]', '["h3_1.jpg"]', 1, 203, 4),
+(5, '武大旁简约单间，学生优选', '武昌区八一路学府公寓2栋', 1400.00, '单间', 28.00, '["WiFi","热水器"]', '["h4_1.jpg"]', 1, 67, 5),
+(5, '三室两厅家庭住房，可合租', '武昌区中南二路平安小区7栋', 3200.00, '三室两厅', 92.30, '["全套家电","燃气","阳台"]', '["h5_1.jpg","h5_2.jpg"]', 1, 112, 5),
+(5, '江景一室一厅，视野开阔', '江岸区沿江大道江景苑4栋', 2800.00, '一室一厅', 48.60, '["空调","洗衣机","宽带"]', '["h6_1.jpg","h6_2.jpg"]', 0, 45, 5);
+
+
+
+INSERT INTO appointments (house_id, tenant_id, landlord_id, appointment_time, status)
+VALUES
+(1, 1, 4, '2026-07-05 10:00:00', 1),
+(2, 1, 4, '2026-07-06 15:30:00', 1),
+(3, 2, 4, '2026-07-07 09:30:00', 2),
+(4, 2, 5, '2026-07-08 14:00:00', 1),
+(5, 3, 5, '2026-07-09 16:00:00', 0),
+(6, 3, 5, '2026-07-10 11:00:00', 3);
+
+
+
+INSERT INTO contracts 
+(house_id, tenant_id, landlord_id, contract_no, start_date, end_date, monthly_rent, deposit_amount, content, tenant_signed, landlord_signed, status, signed_at)
+VALUES
+(1, 1, 4, 'HT20260701001', '2026-07-12', '2026-10-12', 1600.00, 3200.00, '标准租房合同，水电自理，退房无损坏全额退押金', 1, 1, 1, '2026-07-11 09:20:00'),
+(2, 1, 4, 'HT20260701002', '2026-07-13', '2026-12-13', 2200.00, 4400.00, '长租优惠，季度付租，家电人为损坏需赔付', 1, 1, 1, '2026-07-12 10:10:00'),
+(4, 2, 5, 'HT20260701003', '2026-07-15', '2026-09-15', 1400.00, 2800.00, '短租两月，押金到期结算', 1, 1, 2, '2026-07-14 15:00:00'),
+(5, 3, 5, 'HT20260701004', '2026-08-01', '2026-11-01', 3200.00, 6400.00, '合租三房，公共区域卫生共同维护', 1, 1, 1, '2026-07-30 16:30:00'),
+(1, 2, 4, 'HT20260701005', '2026-08-05', '2026-11-05', 1600.00, 3200.00, '转租合规，房东知情同意', 1, 1, 1, '2026-08-04 09:00:00'),
+(2, 3, 4, 'HT20260701006', '2026-06-01', '2026-08-01', 2200.00, 4400.00, '暑期短租，租期结束自动解约', 1, 1, 2, '2026-05-30 14:20:00');
+
+
+
+INSERT INTO payments (contract_id, amount, pay_period_start, pay_period_end, pay_status, paid_at)
+VALUES
+(1, 1600.00, '2026-07-12', '2026-08-11', 1, '2026-07-11 09:30:00'),
+(1, 1600.00, '2026-08-12', '2026-09-11', 1, '2026-08-10 10:00:00'),
+(2, 2200.00, '2026-07-13', '2026-10-12', 1, '2026-07-12 10:30:00'),
+(3, 1400.00, '2026-07-15', '2026-08-14', 1, '2026-07-14 15:20:00'),
+(4, 3200.00, '2026-08-01', '2026-09-30', 0, NULL),
+(5, 1600.00, '2026-08-05', '2026-09-04', 1, '2026-08-04 09:10:00');
+
+
+INSERT INTO house_collect (user_id, house_id, collect_status)
+VALUES
+(1, 1, 1),
+(1, 2, 1),
+(2, 4, 1),
+(2, 5, 1),
+(3, 1, 1),
+(3, 6, 1);
+
+
+INSERT INTO reviews (appointment_id, rating, comment)
+VALUES
+(1, 5, '房子干净整洁，房东热情，配套设施齐全，入住体验极佳'),
+(1, 4, '整体不错，交通便利，希望后续可以更换更大冰箱'),
+(2, 5, '两室户型宽敞，采光很好，家电全新性价比高'),
+(2, 3, '位置好找，价格合理，楼道隔音一般'),
+(4, 5, '单间小巧温馨，靠近高校，通勤十分方便'),
+(4, 4, '房东响应及时，房屋保养到位，推荐租房');
