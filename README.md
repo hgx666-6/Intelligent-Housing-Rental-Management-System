@@ -58,6 +58,7 @@
 - **版本控制**: Git
 
 ## 📁 项目结构
+```
 housing/
 ├── src/
 │ ├── main/
@@ -106,7 +107,7 @@ housing/
 ├── frontend/ # 前端项目（Vue.js）
 ├── pom.xml # Maven 配置
 └── README.md # 项目说明
-
+```
 
 ## 🚀 快速开始
 
@@ -126,11 +127,13 @@ cd housing
 CREATE DATABASE housing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
+```yaml
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/housing?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: your_password
+```
 
 ```sql
 -- 用户表
@@ -215,11 +218,9 @@ GET	/pending/count	待审核数量	管理员
 请求示例
 
 用户注册：
-
-http
+```json
 POST /api/v1/auth/register
 Content-Type: application/json
-
 {
   "username": "zhangsan",
   "password": "123456",
@@ -227,20 +228,20 @@ Content-Type: application/json
   "realName": "张三",
   "role": 1
 }
+```
 
 用户登录：
 
-http
+```json
 POST /api/v1/auth/login
 Content-Type: application/json
-
 {
   "username": "zhangsan",
   "password": "123456"
 }
+```
 
 响应示例：
-
 ```json
 {
   "code": 200,
@@ -297,19 +298,25 @@ file:
   max-size: 10485760             # 10MB
 📦 部署
 Docker 部署
-bash
+```bash
 # 构建镜像
 docker build -t housing:1.0.0 .
+```
 
 # 运行容器
+```bash
 docker run -p 8080:8080 housing:1.0.0
+```
+
 Jar 包部署
-bash
-# 打包
+```bash
 mvn clean package -DskipTests
+```
 
 # 运行
+```bash
 nohup java -jar target/housing-1.0.0.jar > app.log 2>&1 &
+```
 
 🤝 贡献指南
 Fork 本仓库
