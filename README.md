@@ -1,6 +1,6 @@
 # 🏠 智慧房屋租赁系统
 
-基于 Spring Boot 3 + MyBatis-Plus + Vue.js 的房屋租赁管理平台，实现房源管理、预约看房、电子合同、在线支付等核心功能。
+基于 Spring Boot 3 + Vue.js 的房屋租赁管理平台，实现房源管理、预约看房、电子合同、在线支付等核心功能。
 
 ## 📋 项目简介
 
@@ -33,10 +33,10 @@
 ### 后端
 | 技术 | 版本 | 说明 |
 |------|------|------|
-| Java | 17+ | 开发语言 |
-| Spring Boot | 3.1.x | 核心框架 |
+| Java | 21 | 开发语言 |
+| Spring Boot | 3.5.6 | 核心框架 |
 | MyBatis-Plus | 3.5.x | ORM 框架 |
-| MySQL | 8.0+ | 关系型数据库 |
+| MySQL | 8.0.x | 关系型数据库 |
 | JWT | 0.11.x | 身份认证 |
 | Spring Security Crypto | - | 密码加密（BCrypt） |
 | Fastjson | 2.0.x | JSON 处理 |
@@ -51,9 +51,9 @@
 | Axios | HTTP 请求库 |
 
 ### 开发工具
-- **IDE**: IntelliJ IDEA
+- **IDE**: IntelliJ IDEA, VS Code
 - **数据库管理**: Navicat / DBeaver
-- **接口测试**: Postman
+- **接口测试**: Python, curl
 - **项目管理**: Maven
 - **版本控制**: Git
 
@@ -122,7 +122,7 @@ git clone https://github.com/your-username/housing.git
 cd housing
 ```
 
-```
+```sql
 CREATE DATABASE housing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
@@ -169,17 +169,18 @@ CREATE TABLE houses (
 ```
 
 # 编译打包
+```powershell
 mvn clean package
+./mvnw.cmd clean package
+```
 
 # 运行
+```
 java -jar target/housing-1.0.0.jar
-
-# 或直接运行（开发模式）
-mvn spring-boot:run
+```
 
 6. 访问项目
 后端 API: http://localhost:8080
-
 Swagger 文档: http://localhost:8080/swagger-ui/index.html
 
 📚 API 接口文档
@@ -212,6 +213,7 @@ PUT	/{houseId}/approve	审核房源	管理员
 GET	/pending	待审核列表	管理员
 GET	/pending/count	待审核数量	管理员
 请求示例
+
 用户注册：
 
 http
@@ -225,6 +227,7 @@ Content-Type: application/json
   "realName": "张三",
   "role": 1
 }
+
 用户登录：
 
 http
@@ -235,9 +238,10 @@ Content-Type: application/json
   "username": "zhangsan",
   "password": "123456"
 }
+
 响应示例：
 
-json
+```json
 {
   "code": 200,
   "message": "登录成功",
@@ -257,6 +261,9 @@ json
     }
   }
 }
+```
+
+
 🔑 默认账户
 角色	用户名	密码
 管理员	admin	123456
@@ -303,26 +310,19 @@ mvn clean package -DskipTests
 
 # 运行
 nohup java -jar target/housing-1.0.0.jar > app.log 2>&1 &
+
 🤝 贡献指南
 Fork 本仓库
-
 创建功能分支 (git checkout -b feature/AmazingFeature)
-
 提交更改 (git commit -m 'Add some AmazingFeature')
-
 推送到分支 (git push origin feature/AmazingFeature)
-
 提交 Pull Request
 
 📝 开发规范
 遵循阿里巴巴 Java 开发手册
-
 使用 Lombok 简化代码
-
 统一返回格式：Result<T>
-
 异常统一处理：GlobalExceptionHandler
-
 API 文档：使用 Swagger 注解
 
 📄 许可证
@@ -330,13 +330,10 @@ API 文档：使用 Swagger 注解
 
 📧 联系方式
 项目地址：https://github.com/your-username/housing
-
 邮箱：your-email@example.com
 
 🙏 致谢
-Spring Boot
 
-MyBatis-Plus
 
 Vue.js
 
