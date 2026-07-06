@@ -1,0 +1,224 @@
+def role_required(role):
+    """角色权限装饰器，admin路由全部依赖这个"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('index'))
+            # 仅允许 role=admin 进入管理页面
+            if current_user.role != role:
+                flash('您没有权限访问该页面。', 'danger')
+                return redirect(url_for(f'{current_user.role}_dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# ==================== 管理员端路由 ====================
+
+@app.route('/admin/dashboard')
+@login_required
+@role_required('admin')
+def admin_dashboard():
+    """管理员首页总仪表盘：平台全局统计数据"""
+    total_users = User.query.filter_by(role='user').count()
+    total_landlords = User.query.filter_by(role='landlord').count()
+    total_houses = House.query.count()
+    listed_houses = House.query.filter_by(status='listed').count()
+    total_bookings = Booking.query.count()
+    total_contracts = Contract.query.filter_by(status='active').count()
+    this_month = date.today().replace(day=1)
+    month_rent = db.session.query(db.func.sum(Bill.amount)).filter(
+        Bill.type == 'rent', Bill.status == 'paid',
+        Bill.created_at >= this_month
+    ).scalar() or 0
+    frozen_users = User.query.filter_by(status='frozen').count()
+
+    # 预约各状态数量统计（图表使用）
+    booking_stats = {}
+    for s in ['pending', 'confirmed', 'rejected', 'cancelled', 'completed']:
+        booking_stats[s] = Booking.query.filter_by(status=s).count()
+
+    return render_template('admin/dashboard.html',
+                         total_users=total_users,
+                         total_landlords=total_landlords,
+                         total_houses=total_houses,
+                         listed_houses=listed_houses,
+                         total_bookings=total_bookings,
+                         total_contracts=total_contracts,
+                         month_rent=month_rent,
+                         frozen_users=frozen_users,
+                         booking_stats=json.dumps(booking_stats, ensure_ascii=False))
+
+
+@app.route('/admin/users')
+@login_required
+@role_required('admin')
+def admin_users():
+    """用户管理：查看租客/房东列表，支持角色筛选"""
+    role_filter = request.args.get('role', '').strip()
+    query = User.query
+    if role_filter:
+        query = query.filter_by(role=role_filter)
+    users = query.order_by(User.created_at.desc()).all()
+    return render_template('admin/users.html', users=users, role_filter=role_filter)
+
+
+@app.route('/admin/user/<int:user_id>/freeze', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_freeze_user(user_id):
+    """冻结/解冻用户账号，禁止冻结admin自身"""
+    user = User.query.get_or_404(user_id)
+    if user.role == 'admin':
+        flash('不能冻结管理员账号。', 'danger')
+        return redirect(url_for('admin_users'))
+    # 状态切换 active <-> frozen
+    user.status = 'frozen' if user.status == 'active' else 'active'
+    db.session.commit()
+    flash(f'用户{user.username}已{"冻结" if user.status == "frozen" else "解冻"}。', 'success')
+    return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/user/<int:user_id>/reset-password', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_reset_password(user_id):
+    """管理员一键重置用户密码为123456"""
+    user = User.query.get_or_404(user_id)
+    user.set_password('123456')
+    db.session.commit()
+    flash(f'用户{user.username}的密码已重置为: 123456', 'success')
+    return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/houses')
+@login_required
+@role_required('admin')
+def admin_houses():
+    """全平台房源管理列表"""
+    houses = House.query.order_by(House.created_at.desc()).all()
+    return render_template('admin/houses.html', houses=houses)
+
+
+@app.route('/admin/house/<int:house_id>/toggle', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_toggle_house(house_id):
+    """管理员强制上架/下架任意房源"""
+    house = House.query.get_or_404(house_id)
+    house.status = 'unlisted' if house.status == 'listed' else 'listed'
+    db.session.commit()
+    flash(f'房源已{"下架" if house.status == "unlisted" else "上架"}。', 'success')
+    return redirect(url_for('admin_houses'))
+
+
+@app.route('/admin/statistics')
+@login_required
+@role_required('admin')
+def admin_statistics():
+    """平台深度数据统计页面（图表专用）"""
+    # 近6个月租金流水统计
+    monthly_income = []
+    for i in range(5, -1, -1):
+        month_start = date.today().replace(day=1) - timedelta(days=i * 30)
+        month_start = month_start.replace(day=1)
+        if i == 0:
+            next_month = date.today()
+        else:
+            next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        income = db.session.query(db.func.sum(Bill.amount)).filter(
+            Bill.type == 'rent', Bill.status == 'paid',
+            Bill.created_at >= month_start, Bill.created_at < next_month
+        ).scalar() or 0
+        orders = Bill.query.filter(
+            Bill.type == 'rent', Bill.status == 'paid',
+            Bill.created_at >= month_start, Bill.created_at < next_month
+        ).count()
+        overdue = Bill.query.filter(
+            Bill.status == 'unpaid', Bill.due_date < next_month,
+            Bill.created_at >= month_start
+        ).count()
+        monthly_income.append({
+            'month': month_start.strftime('%Y-%m'),
+            'income': float(income),
+            'orders': orders,
+            'overdue': overdue
+        })
+
+    # 房源预约热度排行
+    house_bookings = db.session.query(
+        House.title, db.func.count(Booking.id).label('cnt')
+    ).join(Booking).group_by(House.id).order_by(db.text('cnt DESC')).all()
+    booking_heat = [{'title': h[0], 'count': h[1]} for h in house_bookings]
+
+    # 预约转签约转化率
+    total_bookings = Booking.query.count()
+    completed = Booking.query.filter_by(status='completed').count()
+    conversion_rate = round(completed / total_bookings * 100, 1) if total_bookings > 0 else 0
+
+    # 收藏热门房源TOP10
+    fav_ranking = db.session.query(
+        House.title, db.func.count(Favorite.id).label('cnt')
+    ).join(Favorite).group_by(House.id).order_by(db.text('cnt DESC')).limit(10).all()
+    fav_heat = [{'title': f[0], 'count': f[1]} for f in fav_ranking]
+
+    return render_template('admin/statistics.html',
+                         monthly_income=json.dumps(monthly_income, ensure_ascii=False),
+                         booking_heat=json.dumps(booking_heat, ensure_ascii=False),
+                         fav_heat=json.dumps(fav_heat, ensure_ascii=False),
+                         conversion_rate=conversion_rate,
+                         total_bookings=total_bookings,
+                         completed=completed)
+
+
+@app.route('/admin/rules', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def admin_rules():
+    """系统全局规则配置：预约限制、租房押金规则"""
+    if request.method == 'POST':
+        # 租金押金规则
+        rent_rules = {
+            'min_rent_period': request.form.get('min_rent_period', type=int, default=1),
+            'deposit_multiplier': request.form.get('deposit_multiplier', type=int, default=1),
+            'deposit_months': request.form.get('deposit_months', type=int, default=3)
+        }
+        # 看房预约限制规则
+        booking_rules = {
+            'max_daily_bookings': request.form.get('max_daily_bookings', type=int, default=5),
+            'max_cancel_limit': request.form.get('max_cancel_limit', type=int, default=3)
+        }
+        # 存入系统配置表
+        SystemConfig.set_config('rent_rules', rent_rules)
+        SystemConfig.set_config('booking_rules', booking_rules)
+        flash('规则已更新。', 'success')
+        return redirect(url_for('admin_rules'))
+
+    # GET读取现有配置
+    rent_rules = SystemConfig.get_config('rent_rules',
+                                         {'min_rent_period': 1, 'deposit_multiplier': 1, 'deposit_months': 3})
+    booking_rules = SystemConfig.get_config('booking_rules',
+                                            {'max_daily_bookings': 5, 'max_cancel_limit': 3})
+    return render_template('admin/rules.html', rent_rules=rent_rules,
+                         booking_rules=booking_rules)
+
+
+@app.route('/admin/reviews')
+@login_required
+@role_required('admin')
+def admin_reviews():
+    """平台所有评价管理页面"""
+    reviews = Review.query.order_by(Review.created_at.desc()).all()
+    return render_template('admin/reviews.html', reviews=reviews)
+
+
+@app.route('/admin/review/<int:review_id>/delete', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_delete_review(review_id):
+    """管理员删除违规评价"""
+    review = Review.query.get_or_404(review_id)
+    db.session.delete(review)
+    db.session.commit()
+    flash('评价已删除。', 'success')
+    return redirect(url_for('admin_reviews'))
